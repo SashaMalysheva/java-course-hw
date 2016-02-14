@@ -22,14 +22,17 @@ public class LazyFactory {
     public static <T> Lazy<T> createLazyMT(final Supplier<T> supplier) {
         return new Lazy<T>() {
             private volatile boolean calc;
-            private T res;
+            private volatile T res;
 
-            public synchronized T get() {
-                if (calc) {
-                    return  res;
+            public T get() {
+                if (!calc) {
+                    synchronized (this) {
+                        if (!calc) {
+                            res = supplier.get();
+                            calc = true;
+                        }
+                    }
                 }
-                res = supplier.get();
-                calc = true;
                 return res;
             }
         };
@@ -37,11 +40,12 @@ public class LazyFactory {
 
     public static <T> Lazy<T> createLazyLockFree(final Supplier<T> supplier) {
         return new Lazy<T>() {
-            AtomicMarkableReference<T> res = new AtomicMarkableReference<>(null, false);
+            private final AtomicMarkableReference<T> res = new AtomicMarkableReference<>(null, false);
 
             public T get() {
                 if (!res.isMarked()) {
-                    res.set(supplier.get(), true);
+                    T t = supplier.get();
+                    res.compareAndSet(null, t, false, true);
                 }
                 return res.getReference();
             }
