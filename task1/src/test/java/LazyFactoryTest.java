@@ -68,7 +68,7 @@ public class LazyFactoryTest {
 
     @Test
     public void testReturnSameValueMT() {
-        int n = 10;
+        int n = 20;
         CyclicBarrier barrier = new CyclicBarrier(n);
         Thread[] threads = new Thread[n];
 
@@ -76,20 +76,19 @@ public class LazyFactoryTest {
         CountedSupplier<String> countedSup = new CountedSupplier<>(sup);
         Lazy<String> lazyStr = LazyFactory.createLazyMT(countedSup);
 
-        ArrayList<String> answers = new ArrayList<>(n);
-
-        Runnable r = () -> {
-            try {
-                barrier.await();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            answers.add(lazyStr.get());
-        };
+        String[] answers = new String[n];
 
         for (int i = 0; i < n; i++) {
-            threads[i] = new Thread(r);
-            threads[i].start();
+            final int t = i;
+            threads[t] = new Thread(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                answers[t] = lazyStr.get();
+            });
+            threads[t].start();
         }
         for (int i = 0; i < n; i++) {
             try {
@@ -98,36 +97,36 @@ public class LazyFactoryTest {
                 e.printStackTrace();
             }
         }
-        assertTrue(answers.size() == n);
-        for (int i = 1; i < answers.size(); i++) {
-            assertEquals(answers.get(i - 1), answers.get(i));
+        for (int i = 0; i < n; i++) {
+            assertEquals("returned " + answers[i] ,answers[i], sup.get());
         }
         assertTrue(countedSup.getCount() == 1);
     }
 
+
     @Test
     public void testReturnSameValueLockFree() {
-        int n = 10;
+        int n = 20;
         CyclicBarrier barrier = new CyclicBarrier(n);
         Thread[] threads = new Thread[n];
 
         Supplier<String> sup = () -> "abc";
         Lazy<String> lazyStr = LazyFactory.createLazyLockFree(sup);
 
-        ArrayList<String> answers = new ArrayList<>(n);
-
-        Runnable r = () -> {
-            try {
-                barrier.await();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            answers.add(lazyStr.get());
-        };
+        String[] answers = new String[n];
 
         for (int i = 0; i < n; i++) {
-            threads[i] = new Thread(r);
-            threads[i].start();
+            final int t = i;
+            threads[t] = new Thread(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                answers[t] = lazyStr.get();
+                assertEquals(answers[t], "abc");
+            });
+            threads[t].start();
         }
         for (int i = 0; i < n; i++) {
             try {
@@ -136,9 +135,8 @@ public class LazyFactoryTest {
                 e.printStackTrace();
             }
         }
-        assertTrue(answers.size() == n);
-        for (int i = 1; i < answers.size(); i++) {
-            assertEquals(answers.get(i - 1), answers.get(i));
+        for (int i = 0; i < n; i++) {
+           assertEquals(answers[i], sup.get());
         }
     }
 
