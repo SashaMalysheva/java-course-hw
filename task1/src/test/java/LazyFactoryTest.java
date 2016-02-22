@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 public class LazyFactoryTest {
 
-    public class CountedSupplier<T> implements Supplier<T> {
+    private class CountedSupplier<T> implements Supplier<T> {
 
         private int count = 0;
         private final Supplier<T> sup;
@@ -25,7 +25,7 @@ public class LazyFactoryTest {
         }
     }
 
-    class SingleThreadTester<T> {
+    private class SingleThreadTester<T> {
         private final Supplier<T> supplier;
         private final T expected;
 
@@ -39,11 +39,12 @@ public class LazyFactoryTest {
             Lazy<T> lazy = LazyFactory.createLazy(countedSupplier);
 
             assertEquals(0, countedSupplier.getCount());
-            assertEquals(expected, lazy.get());
+            T first = lazy.get();
+            assertEquals(expected, first);
             assertEquals(1, countedSupplier.getCount());
 
-            lazy.get();
-            lazy.get();
+            assertSame(first, lazy.get());
+            assertSame(first, lazy.get());
 
             assertEquals(1, countedSupplier.getCount());
         }
@@ -52,10 +53,14 @@ public class LazyFactoryTest {
     @Test
     public void testLazySingleThread() {
         new SingleThreadTester<>(() -> "abc", "abc").run();
+    }
+
+    @Test
+    public void testNullLazySingleThread() {
         new SingleThreadTester<>(() -> null, null).run();
     }
 
-    class MultiThreadTester<T> {
+    private class MultiThreadTester<T> {
         private final Lazy<T> lazy;
         private final T expected;
         private final int threadCount;
@@ -81,7 +86,9 @@ public class LazyFactoryTest {
                         e.printStackTrace();
                     }
                     answers[t] = lazy.get();
-                    assertEquals(expected, lazy.get());
+
+                    assertEquals(expected, answers[t]);
+                    assertSame(answers[t], lazy.get());
                 });
                 threads[t].start();
             }
@@ -100,21 +107,21 @@ public class LazyFactoryTest {
 
     @Test
     public void testLazyMultiThread() {
-        Supplier<String> sup = () -> "abc";
-        CountedSupplier<String> countedSup = new CountedSupplier<>(sup);
-        Lazy<String> lazyStr = LazyFactory.createLazyMT(countedSup);
+        CountedSupplier<String> countedSupplier = new CountedSupplier<>(() -> "abc");
+        Lazy<String> lazyStr = LazyFactory.createLazyMT(countedSupplier);
 
+        assertEquals(0, countedSupplier.getCount());
         new MultiThreadTester<>(lazyStr, "abc",  20).run();
-
-        assertEquals(1, countedSup.getCount());
+        assertEquals(1, countedSupplier.getCount());
     }
 
 
     @Test
     public void testLazyMultiThreadLockFree() {
-        Supplier<String> sup = () -> "abc";
-        Lazy<String> lazyStr = LazyFactory.createLazyLockFree(sup);
+        CountedSupplier<String> countedSupplier = new CountedSupplier<>(() -> "abc");
+        Lazy<String> lazyStr = LazyFactory.createLazyLockFree(countedSupplier);
 
+        assertEquals(0, countedSupplier.getCount());
         new MultiThreadTester<>(lazyStr, "abc", 20).run();
     }
 
