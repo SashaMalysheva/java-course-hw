@@ -59,17 +59,23 @@ class ClientRunnable implements Runnable {
             e.printStackTrace();
         } finally {
             try {
-                client.shutdownInput();
+                if (!client.isInputShutdown() && !client.isClosed()) {
+                    client.shutdownInput();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
             try {
-                client.shutdownOutput();
+                if (!client.isOutputShutdown() && !client.isClosed()) {
+                    client.shutdownOutput();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
             try {
-                client.close();
+                if (!client.isClosed()) {
+                    client.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
