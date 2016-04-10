@@ -1,5 +1,6 @@
 package ru.spbau.mit;
 
+import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import java.io.File;
@@ -16,28 +17,48 @@ import static ru.spbau.mit.SecondPartTasks.*;
 
 public class SecondPartTasksTest {
 
-    private static final String NOT_RES = "not res\n";
-    private static final String FILE = "file";
 
     @Test
-    public void testFindQuotes() throws IOException{
-        List<String> fileName = new ArrayList<>(10);
+    public void testFindQuotes() throws IOException {
+        List<String> fileNames = new ArrayList<>(10);
         List<String> res = new ArrayList<>();
         String name = "name";
         for (int i = 0; i < 9; i++) {
             name += "abc";
-            PrintWriter pw = new PrintWriter(new File(name));
-            pw.print("aa" + name + "\n");
-            pw.print("bb" + name + "\n");
-            pw.print("cc" + name + "\n");
-            fileName.add(name);
+            File f = new File(name);
+            f.deleteOnExit();
+            PrintWriter pw = new PrintWriter(f);
+            pw.println("aa" + name);
+            pw.println("bb" + name);
+            pw.println("cc" + name);
+            fileNames.add(name);
             if (i > 0) {
                 res.add("bb" + name);
             }
             pw.close();
         }
 
-        List<String> out = findQuotes(fileName, "bnameabcabc");
+        List<String> out = findQuotes(fileNames, "bnameabcabc");
+
+        assertEquals(res, out);
+    }
+
+    @Test
+    public void testFindQuotesInvalidPaths() throws IOException {
+        String validPath = "valid";
+        File valid = new File(validPath);
+        valid.deleteOnExit();
+        String invalidPath = "invalid";
+        List<String> fileNames = new ArrayList<String>(){{
+            add(validPath);
+            add(invalidPath);
+        }};
+        PrintWriter pw = new PrintWriter(valid);
+        pw.println("abc");
+        pw.close();
+
+        List<String> res = Collections.singletonList("abc");
+        List<String> out = findQuotes(fileNames, "b");
 
         assertEquals(res, out);
     }
@@ -59,8 +80,14 @@ public class SecondPartTasksTest {
 
 
     @Test
+    public void testCalculateGlobalOrderEmpty() {
+        Map<String, Integer> result = calculateGlobalOrder(Collections.emptyList());
+        assertEquals(Collections.emptyMap(), result);
+    }
+
+    @Test
     public void testCalculateGlobalOrder() {
-        List<Map<String, Integer>> data = new ArrayList<Map<String, Integer>>();
+        List<Map<String, Integer>> data = new ArrayList<>();
 
         data.add(new HashMap<String, Integer>(){{
             put("A", 1);
@@ -77,11 +104,14 @@ public class SecondPartTasksTest {
             put("B", 10);
         }});
 
+        Map<String, Integer> expected = new HashMap<String, Integer>(){{
+            put("A", 1);
+            put("B", 17);
+            put("C", 3);
+            put("D", 8);
+        }};
+
         Map<String, Integer> result = calculateGlobalOrder(data);
-        assertEquals(1, (int)result.get("A"));
-        assertEquals(17, (int)result.get("B"));
-        assertEquals(3, (int)result.get("C"));
-        assertEquals(8, (int)result.get("D"));
-        assertEquals(4, result.entrySet().size());
+        assertEquals(expected, result);
     }
 }

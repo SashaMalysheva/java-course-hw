@@ -3,14 +3,15 @@ package ru.spbau.mit;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class SecondPartTasks {
+
+    private static final double R = 0.5;
+    private static final int NUM_OF_REP = 10000000;
+    private static final Random RND = new Random();
 
     private SecondPartTasks() {}
 
@@ -21,8 +22,7 @@ public final class SecondPartTasks {
                 .flatMap(p -> {
                     try {
                         return Files.lines(Paths.get(p));
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } catch (IOException ignored) {
                     }
                     return null;
                 })
@@ -33,19 +33,16 @@ public final class SecondPartTasks {
     // В квадрат с длиной стороны 1 вписана мишень.
     // Стрелок атакует мишень и каждый раз попадает в произвольную точку квадрата.
     // Надо промоделировать этот процесс с помощью класса java.util.Random и посчитать, какова вероятность попасть в мишень.
-    private static final double R = 0.5;
-    private static final int NUM_OF_REP = 10000000;
-
     public static double piDividedBy4() {
         return Stream
-                .generate(() -> Math.pow(new Random().nextDouble() - R, 2.0) + Math.pow(new Random().nextDouble() - R, 2))
+                .generate(() -> Math.pow(RND.nextDouble() - R, 2) + Math.pow(RND.nextDouble() - R, 2))
                 .limit(NUM_OF_REP)
-                .filter(x -> x <= Math.pow(R, 2.0))
+                .filter(x -> x <= Math.pow(R, 2))
                 .count() / ((double) NUM_OF_REP);
     }
 
-    private static class AuthorInfo {
-        public int count;
+    private static final class AuthorInfo {
+        public final int count;
         public final String name;
 
         public AuthorInfo(String name, int count) {
@@ -63,10 +60,10 @@ public final class SecondPartTasks {
                 .map((entry) -> new AuthorInfo(entry.getKey(), entry
                         .getValue()
                         .stream()
-                        .map(String::length)
-                        .reduce(0, (a, b) -> a + b)
+                        .mapToInt(String::length)
+                        .sum()
                 ))
-                .max((a, b) -> Integer.compare(a.count, b.count))
+                .max(Comparator.comparingInt(a -> a.count))
                 .get().name;
     }
 
@@ -79,6 +76,6 @@ public final class SecondPartTasks {
                         .entrySet()
                         .stream())
                 .collect(Collectors
-                        .toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a + b));
+                        .toMap(Map.Entry::getKey, Map.Entry::getValue, Integer::sum));
     }
 }

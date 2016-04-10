@@ -1,9 +1,7 @@
 package ru.spbau.mit;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -15,14 +13,14 @@ public final class FirstPartTasks {
     // Список названий альбомов
     public static List<String> allNames(Stream<Album> albums) {
         return albums
-                .map(a -> a.getName())
+                .map(Album::getName)
                 .collect(Collectors.toList());
     }
 
     // Список названий альбомов, отсортированный лексикографически по названию
     public static List<String> allNamesSorted(Stream<Album> albums) {
         return albums
-                .map(a -> a.getName())
+                .map(Album::getName)
                 .sorted()
                 .collect(Collectors.toList());
     }
@@ -32,7 +30,7 @@ public final class FirstPartTasks {
         return albums
                 .flatMap(a -> a.getTracks()
                         .stream())
-                .map(a -> a.getName())
+                .map(Track::getName)
                 .sorted()
                 .collect(Collectors.toList());
     }
@@ -71,7 +69,7 @@ public final class FirstPartTasks {
     public static long countAlbumDuplicates(Stream<Album> albums) {
         return albums.collect(
                 Collectors.groupingBy(
-                        a -> a,
+                        Function.identity(),
                         Collectors.counting()))
                 .entrySet()
                 .stream()
@@ -83,35 +81,21 @@ public final class FirstPartTasks {
     // (если в альбоме нет ни одного трека, считать, что максимум рейтинга в нем --- 0)
     public static Optional<Album> minMaxRating(Stream<Album> albums) {
         return albums.min(
-                (a, b) -> Integer.compare(
-                        a.getTracks()
-                                .stream()
-                                .mapToInt(Track::getRating)
-                                .max()
-                                .orElse(0),
-
-                        b.getTracks()
-                                .stream()
-                                .mapToInt(Track::getRating)
-                                .max()
-                                .orElse(0)));
+                Comparator.comparingInt(a ->  a.getTracks()
+                        .stream()
+                        .mapToInt(Track::getRating)
+                        .max()
+                        .orElse(0)));
     }
 
     // Список альбомов, отсортированный по убыванию среднего рейтинга его треков (0, если треков нет)
     public static List<Album> sortByAverageRating(Stream<Album> albums) {
         return albums
-                .sorted((a, b) -> -Double.compare(
-                        a.getTracks()
-                                .stream()
-                                .mapToDouble(Track::getRating)
-                                .average()
-                                .orElse(0),
-
-                        b.getTracks()
-                                .stream().
-                                mapToDouble(Track::getRating)
-                                .average()
-                                .orElse(0)))
+                .sorted(Comparator.comparingDouble((Album a) -> a.getTracks()
+                        .stream()
+                        .mapToInt(Track::getRating)
+                        .average()
+                        .orElse(0)).reversed())
                 .collect(Collectors.toList());
     }
 
@@ -124,11 +108,11 @@ public final class FirstPartTasks {
     // Вернуть строку, состояющую из конкатенаций переданного массива, и окруженную строками "<", ">"
     // см. тесты
     public static String joinTo(String... strings) {
-        return "<" + Arrays.stream(strings).collect(Collectors.joining(", ")) + ">";
+        return Arrays.stream(strings).collect(Collectors.joining(", ", "<", ">"));
     }
 
     // Вернуть поток из объектов класса 'clazz'
     public static <R> Stream<R> filterIsInstance(Stream<?> s, Class<R> clazz) {
-        return ((Stream<R>) s.filter(a -> clazz.isInstance(a)));
+        return ((Stream<R>) s.filter(clazz::isInstance));
     }
 }
