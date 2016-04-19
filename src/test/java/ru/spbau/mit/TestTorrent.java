@@ -1,205 +1,145 @@
 package ru.spbau.mit;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import ru.spbau.mit.torrent.*;
 
-import java.io.File;
+import static org.junit.Assert.*;
+
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Scanner;
-
-import static java.nio.file.Files.delete;
-import static org.junit.Assert.assertEquals;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
 
 public class TestTorrent {
-    private static final int CLIENT1_PORT = 8090;
-    private static final int CLIENT3_PORT = 8091;
-    private static final int CLIENT4_PORT = 8092;
-    private static final int SLEEP_TIME = 1000;
-    private Path tmpDir;
-    private File file1;
-    private File fileState;
-    private Path tmpDirServer;
-    private File fileStateServer;
-    private Path tmpDir2;
-    private File file2;
-    private File fileState2;
 
-    private Server server;
-    private Client client1;
-    private Client client2;
-    private String fileEntry = "test   @";
+    private static final Path EXAMPLE_PATH = Paths.get("src", "test", "resources", "checkstyle.xml");
+    private static final Path CLIENT1_DIR = Paths.get("torrent", "client-01");
+    private static final Path CLIENT2_DIR = Paths.get("torrent", "client-02");
+
+    private FileEntry upload(Client client) throws IOException {
+        return client.upload(
+                TestTorrent.EXAMPLE_PATH.getFileName().toString(),
+                Files.size(TestTorrent.EXAMPLE_PATH)
+        );
+    }
+
+    @Test
+    public void testListAndUpload() throws IOException {
+        try (
+                Tracker tracker = new Tracker();
+                Client client1 = new Client("localhost", CLIENT1_DIR);
+                Client client2 = new Client("localhost", CLIENT2_DIR)
+        ) {
+            Thread trackerThread = new Thread(tracker);
+            trackerThread.start();
+
+            assertEquals(Collections.emptyList(), client1.list());
+            assertEquals(Collections.emptyList(), client2.list());
+
+            FileEntry entry1 = upload(client1);
+            FileEntry entry2 = upload(client2);
+            assertNotEquals(entry1.getID(), entry2.getID());
+
+            assertEquals(Arrays.asList(entry1, entry2), client1.list());
+            assertEquals(Arrays.asList(entry1, entry2), client2.list());
+
+            trackerThread.interrupt();
+            trackerThread.join();
+        } catch (InterruptedException ignored) {
+        }
+    }
+
+
+    @Test
+    public void testDownload() throws IOException {
+        FileEntry entry;
+        try (
+                Tracker tracker = new Tracker();
+                Client client2 = new Client("localhost", CLIENT2_DIR);
+                Client client1 = new Client("localhost", CLIENT1_DIR)) {
+            Thread trackerThread = new Thread(tracker);
+            trackerThread.start();
+
+            entry = upload(client1);
+
+            FileState state = FileState.ownFile(EXAMPLE_PATH, entry.getID());
+            client1.saveFileState(state);
+
+            final int id = entry.getID();
+
+            assertNotNull(client2
+                            .list()
+                            .stream()
+                            .filter(a -> a.getID() == id)
+                            .findAny()
+                            .orElse(null)
+            );
+
+            // seeding
+            try (Seed seed = client1.seed()) {
+                Thread seedThread = new Thread(seed);
+                seedThread.start();
+
+            //downloading
+                Thread.sleep(500);
+
+                List<ClientInfo> seeds = client2.sources(id);
+                ClientInfo seedInfo = seeds.get(0);
+
+                List<Integer> parts = client2.stat(seedInfo.openSocket(), id);
+
+                FileState newState = FileState.newFile(CLIENT2_DIR, entry);
+                client2.saveFileState(newState);
+
+                for (int part : parts) {
+                    client2.get(seedInfo.openSocket(), newState, part);
+                }
+
+                seedThread.interrupt();
+                seedThread.join();
+
+                trackerThread.interrupt();
+                trackerThread.join();
+
+                assertTrue("Something missed", newState.allLoaded());
+            }
+
+            assertTrue("Files are different", FileUtils.contentEquals(
+                    EXAMPLE_PATH.toFile(),
+                    CLIENT2_DIR.resolve(EXAMPLE_PATH.getFileName().toString()).toFile()
+            ));
+        } catch (InterruptedException ignored) {
+        }
+    }
 
     @Before
-    public void create() throws IOException {
-        tmpDir = Files.createTempDirectory("torrent1_");
-        file1 = new File(tmpDir.toString() + File.separator + "file1");
-        fileState = new File(tmpDir.toString() + File.separator + "stateClient1");
-
-        tmpDirServer = Files.createTempDirectory("torrent0_");
-        fileStateServer = new File(tmpDir.toString() + File.separator + "stateServer");
-
-        tmpDir2 = Files.createTempDirectory("torrent2_");
-        file2 = new File(tmpDir.toString() + File.separator + "file");
-        fileState2 = new File(tmpDir.toString() + File.separator + "stateClient2");
-    }
-
-    @Test
-    public void testDownload() throws IOException, InterruptedException {
-        PrintWriter writer = new PrintWriter(file1);
-
-        writer.print(fileEntry);
-
-        writer.close();
-
-        Thread thread = new Thread(() -> {
-            try {
-                createServer();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        thread.start();
-
-        Thread.sleep(SLEEP_TIME);
-
-        Thread thread1 = new Thread(() -> {
-            try {
-                createClient1(CLIENT3_PORT);
-            } catch (IOException  e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
-
-        thread1.start();
-        Thread.sleep(SLEEP_TIME);
-
-        Thread thread2 = new Thread(() -> {
-            try {
-                downloadClient2(CLIENT4_PORT);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
-        thread2.start();
-
-
-        Thread.sleep(SLEEP_TIME);
-
-        thread1.interrupt();
-        thread2.interrupt();
-        server.stop();
-        File file = new File(tmpDir2.toString() + File.separator + "down");
-
-        Scanner in = new Scanner(file);
-        String resS = in.nextLine();
-
-        System.err.println(resS);
-
-        assertEquals(fileEntry, resS);
-    }
-
-
-    @Test
-    public void testNewFileAndList() throws IOException, InterruptedException {
-        PrintWriter writer = new PrintWriter(file1);
-
-        writer.print(fileEntry);
-
-        writer.close();
-
-        Thread thread = new Thread(() -> {
-            try {
-                createServer();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        thread.start();
-
-        Thread.sleep(SLEEP_TIME);
-
-        Thread thread1 = new Thread(() -> {
-            try {
-                createClient1(CLIENT1_PORT);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
-
-        thread1.start();
-
-        Thread.sleep(SLEEP_TIME);
-
-        Thread thread2 = new Thread(() -> {
-            try {
-                createClient2();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        thread2.start();
-
-        thread2.join();
-
-        thread1.interrupt();
-        server.stop();
-    }
-
-    private void downloadClient2(int port) throws IOException, InterruptedException {
-        client2 = new Client("localhost", fileState2.getAbsolutePath());
-        ArrayList<FInfo> res = client2.list();
-        client2.get(res.get(0).getId(), tmpDir2.toString() + File.separator + "down");
-
-        client2.run(port);
-    }
-
-    private void createClient2() throws IOException {
-        client2 = new Client("localhost", fileState2.getAbsolutePath());
-        ArrayList<FInfo> res = client2.list();
-
-        assertEquals(res.size(), 1);
-        assertEquals(res.get(0).getName(), file1.getPath());
-    }
-
-    private void createClient1(int port) throws IOException, InterruptedException {
-        client1 = new Client("localhost", fileState.getAbsolutePath());
-        client1.newFile(file1.getPath());
-        client1.run(port);
-    }
-
-    private void createServer() throws IOException {
-        server = new Server(fileStateServer);
-        server.start();
+    public void init() throws IOException {
+        Files.createDirectories(CLIENT1_DIR);
+        Files.createDirectories(CLIENT2_DIR);
     }
 
     @After
-    public void clean() throws IOException {
-        deleteDir(tmpDir);
-        deleteDir(tmpDir2);
-        deleteDir(tmpDirServer);
+    public void clear() throws IOException {
+        Path path = Paths.get("torrent");
+        if (Files.exists(path)) {
+            Files.walkFileTree(path, new DirectoryRemover());
+        }
     }
 
-    private void deleteDir(Path dir) throws IOException {
-        File directory = new File(dir.toString());
-        File[] subFiles = directory.listFiles();
-        if (subFiles != null) {
-            for (File c : subFiles) {
-                delete(c.toPath());
-            }
+    private static class DirectoryRemover extends SimpleFileVisitor<Path> {
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            Files.delete(file);
+            return super.visitFile(file, attrs);
         }
-        delete(dir.toAbsolutePath());
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            Files.delete(dir);
+            return super.postVisitDirectory(dir, exc);
+        }
     }
 }
