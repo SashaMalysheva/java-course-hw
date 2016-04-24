@@ -7,7 +7,6 @@ import java.util.*;
 public final class Tracker extends Server {
 
     public static final int SERVER_PORT = 8081;
-    public static final long UPDATE_TIMEOUT = 60000;
 
     private final List<FileEntry> files = new ArrayList<>();
     private final Set<ClientInfo> clientInfoSet = new HashSet<>();

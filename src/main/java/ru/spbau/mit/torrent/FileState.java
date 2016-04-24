@@ -53,12 +53,6 @@ public final class FileState {
         }
     }
 
-    private void partLoaded(int part) {
-        synchronized (partStateList) {
-            partStateList.set(part, PartState.LOADED);
-        }
-    }
-
     private int realPartSize(int part) {
         if (part == partStateList.size() - 1) {
             int tmp = (int) fileEntry.getSize() % FULL_PART_SIZE;
@@ -71,20 +65,20 @@ public final class FileState {
         if (getPartStateList(part) != PartState.LOADED) {
             throw new IOException("Such part hasn't loaded");
         }
-        RandomAccessFile file = new RandomAccessFile(local.toFile(), "r");
-        file.seek(part * FULL_PART_SIZE);
+        try (RandomAccessFile file = new RandomAccessFile(local.toFile(), "r")) {
+            file.seek(part * FULL_PART_SIZE);
 
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int partSize = realPartSize(part);
-        while (partSize > 0) {
-            int read = file.read(buffer, 0, Math.min(partSize, BUFFER_SIZE));
-            if (read == -1) {
-                throw new EOFException("File is shorter than recorded size.");
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int partSize = realPartSize(part);
+            while (partSize > 0) {
+                int read = file.read(buffer, 0, Math.min(partSize, BUFFER_SIZE));
+                if (read == -1) {
+                    throw new EOFException("File is shorter than recorded size.");
+                }
+                partSize -= read;
+                dos.write(buffer, 0, read);
             }
-            partSize -= read;
-            dos.write(buffer, 0, read);
         }
-        file.close();
     }
 
     public void writePart(int part, DataInputStream dis) throws IOException {
@@ -94,21 +88,28 @@ public final class FileState {
             }
             partStateList.set(part, PartState.LOADING);
         }
-        RandomAccessFile file = new RandomAccessFile(local.toFile(), "rw");
-        file.seek(part * FULL_PART_SIZE);
+        try (RandomAccessFile file = new RandomAccessFile(local.toFile(), "rw")) {
+            file.seek(part * FULL_PART_SIZE);
 
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int partSize = realPartSize(part);
-        while (partSize > 0) {
-            int read = dis.read(buffer, 0, Math.min(partSize, BUFFER_SIZE));
-            if (read == -1) {
-                throw new EOFException("Cannot read the end of the file from socket.");
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int partSize = realPartSize(part);
+            while (partSize > 0) {
+                int read = dis.read(buffer, 0, Math.min(partSize, BUFFER_SIZE));
+                if (read == -1) {
+                    throw new EOFException("Cannot read the end of the file from socket.");
+                }
+                partSize -= read;
+                file.write(buffer, 0, read);
             }
-            partSize -= read;
-            file.write(buffer, 0, read);
+        } catch (final Exception e) {
+            synchronized (partStateList) {
+                partStateList.set(part, PartState.MISSED);
+            }
+            throw e;
         }
-        file.close();
-        partLoaded(part);
+        synchronized (partStateList) {
+            partStateList.set(part, PartState.LOADED);
+        }
     }
 
     public int getID() {

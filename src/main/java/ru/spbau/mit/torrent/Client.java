@@ -36,11 +36,11 @@ public final class Client implements AutoCloseable {
         if (!Files.exists(state)) {
             Files.createFile(state);
         }
-        DataInputStream dis = new DataInputStream(Files.newInputStream(state));
-        ArrayList<FileState> list = new ArrayList<>();
-        Collections.readFrom(dis, list, FileState::load);
 
-        dis.close();
+        ArrayList<FileState> list = new ArrayList<>();
+        try(DataInputStream dis = new DataInputStream(Files.newInputStream(state))) {
+            Collections.readFrom(dis, list, FileState::load);
+        }
         this.files = list.stream().collect(Collectors.toMap(FileState::getID, Function.<FileState>identity()));
     }
 
