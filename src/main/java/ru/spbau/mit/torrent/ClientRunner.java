@@ -61,7 +61,7 @@ final class ClientRunner {
     }
 
     private void download(FileState state) throws IOException {
-        int id  = state.getID();
+        int id = state.getID();
         List<ClientInfo> seeds = client.sources(id);
         for (ClientInfo seed : seeds) {
             List<Integer> parts = client.stat(seed.openSocket(), id);

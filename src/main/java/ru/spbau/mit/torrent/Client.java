@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,7 @@ public final class Client implements AutoCloseable {
         }
 
         ArrayList<FileState> list = new ArrayList<>();
-        try(DataInputStream dis = new DataInputStream(Files.newInputStream(state))) {
+        try (DataInputStream dis = new DataInputStream(Files.newInputStream(state))) {
             Collections.readFrom(dis, list, FileState::load);
         }
         this.files = list.stream().collect(Collectors.toMap(FileState::getID, Function.<FileState>identity()));

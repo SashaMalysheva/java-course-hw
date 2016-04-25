@@ -33,7 +33,7 @@ public class ListRequest implements TrackerRequest {
     public void readResponse(DataInputStream dis) throws IOException {
         entries.clear();
         Collections.readFrom(dis, entries, (stream) ->
-                new FileEntry(stream.readInt(), stream.readUTF(), stream.readLong())
+                        new FileEntry(stream.readInt(), stream.readUTF(), stream.readLong())
         );
     }
 

@@ -31,7 +31,7 @@ public class UploadRequest implements TrackerRequest {
             entries.add(new FileEntry(id, name, size));
         }
     }
-    
+
     @Override
     public void send(DataOutputStream dos) throws IOException {
         dos.writeByte(TYPE);

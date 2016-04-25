@@ -27,7 +27,7 @@ public abstract class Connection implements AutoCloseable {
 
     public abstract void handleRequest() throws IOException;
 
-    public static  Connection withTracker(Tracker tracker, Socket client) throws IOException {
+    public static Connection withTracker(Tracker tracker, Socket client) throws IOException {
         return new Connection(client) {
 
             @Override

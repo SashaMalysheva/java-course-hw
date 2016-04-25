@@ -17,16 +17,16 @@ public interface TrackerRequest extends Request {
         byte type = dis.readByte();
         TrackerRequest trackerRequest;
         switch (type) {
-            case ListRequest.TYPE :
+            case ListRequest.TYPE:
                 trackerRequest = new ListRequest(tracker);
                 break;
-            case UploadRequest.TYPE :
+            case UploadRequest.TYPE:
                 trackerRequest = new UploadRequest(tracker, dis.readUTF(), dis.readLong());
                 break;
-            case SourcesRequest.TYPE :
+            case SourcesRequest.TYPE:
                 trackerRequest = new SourcesRequest(tracker, dis.readInt());
                 break;
-            case UpdateRequest.TYPE :
+            case UpdateRequest.TYPE:
                 trackerRequest = new UpdateRequest(
                         tracker,
                         dis.readShort(),

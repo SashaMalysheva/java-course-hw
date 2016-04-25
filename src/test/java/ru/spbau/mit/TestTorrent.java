@@ -6,12 +6,14 @@ import org.junit.Before;
 import org.junit.Test;
 import ru.spbau.mit.torrent.*;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class TestTorrent {
 
@@ -83,7 +85,7 @@ public class TestTorrent {
                 Thread seedThread = new Thread(seed);
                 seedThread.start();
 
-            //downloading
+                //downloading
                 Thread.sleep(500);
 
                 List<ClientInfo> seeds = client2.sources(id);

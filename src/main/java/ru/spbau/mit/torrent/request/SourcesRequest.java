@@ -7,7 +7,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -45,11 +47,11 @@ public class SourcesRequest implements TrackerRequest {
         clients = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             InetAddress seedAddress = InetAddress.getByAddress(new byte[]{
-                            dis.readByte(),
-                            dis.readByte(),
-                            dis.readByte(),
-                            dis.readByte()
-                    });
+                    dis.readByte(),
+                    dis.readByte(),
+                    dis.readByte(),
+                    dis.readByte()
+            });
             clients.add(new ClientInfo(seedAddress, dis.readUnsignedShort(), Collections.singleton(id)));
         }
     }

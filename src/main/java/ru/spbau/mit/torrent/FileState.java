@@ -125,7 +125,7 @@ public final class FileState {
         return new FileState(list, fileEntry, localPath);
     }
 
-    public void store(DataOutputStream dos) throws  IOException {
+    public void store(DataOutputStream dos) throws IOException {
         fileEntry.store(dos);
         Collections.writeTo(dos, partStateList, (stream, state) -> stream.writeBoolean(state == PartState.LOADED));
         dos.writeUTF(local.toString());

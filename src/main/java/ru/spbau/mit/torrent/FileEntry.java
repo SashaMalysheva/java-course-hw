@@ -34,7 +34,7 @@ public class FileEntry {
         return new FileEntry(id, name, size);
     }
 
-    public void store(DataOutputStream dos) throws  IOException {
+    public void store(DataOutputStream dos) throws IOException {
         dos.writeInt(id);
         dos.writeUTF(name);
         dos.writeLong(size);
