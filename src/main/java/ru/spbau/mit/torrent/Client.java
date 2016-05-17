@@ -27,6 +27,8 @@ public final class Client implements AutoCloseable {
 
     private final String host;
 
+    private volatile Downloader downloader;
+
     public Client(String host, Path path) throws IOException {
         this.path = path;
         this.host = host;
@@ -40,7 +42,11 @@ public final class Client implements AutoCloseable {
         try (DataInputStream dis = new DataInputStream(Files.newInputStream(state))) {
             Collections.readFrom(dis, list, FileState::load);
         }
-        this.files = list.stream().collect(Collectors.toMap(FileState::getID, Function.<FileState>identity()));
+        this.files = list.stream().collect(Collectors.toConcurrentMap(FileState::getID, Function.<FileState>identity()));
+    }
+
+    public ArrayList<FileState> getArrayOfFiles(){
+        return new ArrayList<>(files.values());
     }
 
     private void store() throws IOException {
@@ -51,6 +57,10 @@ public final class Client implements AutoCloseable {
 
     public List<FileEntry> list() throws IOException {
         return fetchResponse(tracker(), new ListRequest()).getEntries();
+    }
+
+    public Path getPath() {
+        return path;
     }
 
     public FileEntry upload(String name, long size) throws IOException {
@@ -102,8 +112,26 @@ public final class Client implements AutoCloseable {
         files.put(fileState.getID(), fileState);
     }
 
+    public Downloader downloader() {
+        if (downloader == null) {
+            synchronized (this) {
+                if (downloader == null) {
+                    downloader = new Downloader(this);
+                }
+            }
+        }
+        return downloader;
+    }
+
     @Override
     public void close() throws IOException {
+        if (downloader != null) {
+            synchronized (this) {
+                if (downloader != null) {
+                    downloader.close();
+                }
+            }
+        }
         store();
         System.err.println("Client closed");
     }

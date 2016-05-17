@@ -19,11 +19,9 @@ public final class FileState {
 
     enum PartState {
         LOADED, LOADING, MISSED;
-
         boolean missed() {
             return this == MISSED;
         }
-
         boolean loaded() {
             return this == LOADED;
         }
@@ -33,6 +31,9 @@ public final class FileState {
     private final FileEntry fileEntry;
     private final Path local;
 
+    public FileEntry getFileEntry() {
+        return fileEntry;
+    }
 
     private FileState(List<PartState> partStateList, FileEntry fileEntry) throws IOException {
         this(partStateList, fileEntry, Paths.get(""));
@@ -177,7 +178,23 @@ public final class FileState {
         );
     }
 
+    public int numOfExistingParts() {
+        int res = 0;
+        for (PartState part : partStateList) {
+            if (part.loaded()) {
+                ++res;
+            }
+        }
+        return res;
+    }
+
+    public  int getPartsCount() {
+        return partStateList.size();
+    }
+
     private static int parts(long size) {
         return (int) ((size + FULL_PART_SIZE - 1) / FULL_PART_SIZE);
     }
+
+
 }

@@ -40,6 +40,7 @@ public class FileEntry {
         dos.writeLong(size);
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -60,5 +61,10 @@ public class FileEntry {
         result = 31 * result + name.hashCode();
         result = 31 * result + (int) (size ^ (size >>> 32));
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return id + ": " + name + "(" + size + " bytes)";
     }
 }
