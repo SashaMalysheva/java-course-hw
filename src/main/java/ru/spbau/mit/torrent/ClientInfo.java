@@ -3,17 +3,22 @@ package ru.spbau.mit.torrent;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Collections;
 import java.util.Set;
+import java.util.StringJoiner;
 
 public class ClientInfo {
     private final InetAddress seedAddress;
     private final int seedPort;
     private final Set<Integer> ids;
 
+    volatile boolean updated;
+
     public ClientInfo(InetAddress seedAddress, int seedPort, Set<Integer> ids) {
         this.seedAddress = seedAddress;
         this.ids = ids;
         this.seedPort = seedPort;
+        this.updated = true;
     }
 
     public InetAddress getSeedAddress() {
@@ -41,6 +46,7 @@ public class ClientInfo {
         return seedPort == that.seedPort && seedAddress.equals(that.seedAddress);
     }
 
+
     @Override
     public int hashCode() {
         int result = seedAddress.hashCode();
@@ -50,5 +56,10 @@ public class ClientInfo {
 
     public Socket openSocket() throws IOException {
         return new Socket(seedAddress, seedPort);
+    }
+
+    @Override
+    public String toString() {
+        return "Seed{" + seedAddress + ":" + seedPort + "}:" + ids.toString();
     }
 }

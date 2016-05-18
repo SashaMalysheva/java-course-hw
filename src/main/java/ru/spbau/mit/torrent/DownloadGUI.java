@@ -1,102 +1,80 @@
 package ru.spbau.mit.torrent;
 
-import org.apache.log4j.Logger;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
 import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 public class DownloadGUI extends JPanel {
-    private static final Logger LOG = Logger.getLogger(DownloadGUI.class);
-    private static final int TIME_BETWEEN_UPDATE = 1000;
-    private static final int PROGRESS_BAR_SIZE = 100;
-
-    private Client client;
-    private Server seed;
-    private JTable table;
-    private DefaultTableModel model;
-
-    private Thread updateThread;
-
-    private ArrayList<JProgressBar> progressBars = new ArrayList<>();
+    private static final String[] HEADERS = {"ID", "File's name", "Progress"};
 
     public DownloadGUI(Client client) throws IOException {
         super(new GridLayout(1, 0));
 
-        model = new DefaultTableModel() {
-            private String[] header = {"File's name", "Progress"};
+        TableModel model = new DownloadGUITableModel(client);
 
-            @Override
-            public int getColumnCount() {
-                return header.length;
-            }
-
-            @Override
-            public String getColumnName(int index) {
-                return header[index];
-            }
-        };
-
-        this.client = client;
-        this.seed = client.seed();
-        table = new JTable(model);
+        JTable table = new JTable(model);
 
         table.getColumn("Progress").setCellRenderer((table1, value, isSelected, hasFocus, row, column) -> {
-            if (progressBars.size() <= row) {
-                progressBars.add(new JProgressBar(0, PROGRESS_BAR_SIZE));
-            }
-            progressBars.get(row).setStringPainted(true);
-            return progressBars.get(row);
+            FileState state = (FileState) value;
+            int all = state.getPartsCount(), loaded = state.loadedPartsCount();
+            JProgressBar bar =  new JProgressBar(0, all);
+            bar.setValue(loaded);
+            bar.setStringPainted(true);
+            bar.setString((loaded * 100 / all) + "%");
+            return bar;
         });
-        JScrollPane scrollPane = new JScrollPane(table);
-        add(scrollPane);
-
-        updateThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (!Thread.interrupted()) {
-                    update();
-                    try {
-                        Thread.sleep(TIME_BETWEEN_UPDATE);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-        });
-
-        updateThread.start();
-
-
+        add(new JScrollPane(table));
     }
 
+    private static class DownloadGUITableModel extends AbstractTableModel {
 
-    public void update() {
-        ArrayList<FileState> files = client.getArrayOfFiles();
+        private final List<FileState> states;
 
-        int rowsCount = model.getRowCount();
-        for (int i = rowsCount - 1; i >= 0; --i) {
-            model.removeRow(i);
+        public DownloadGUITableModel(Client client) {
+            this.states = client.getArrayOfFiles();
+            client.setOnFileStateAdded(this::addFileState);
+            client.setOnFileStateChanged(this::updateFileProgress);
         }
 
-        for (FileState file : files) {
-            String fileName = file.getFileEntry().getName();
-            model.addRow(new Object[]{fileName});
-            int cntPartHave = file.numOfExistingParts();
-            int allPart = file.getPartsCount();
+        @Override
+        public int getRowCount() {
+            return states.size();
+        }
 
-            int row = model.getRowCount() - 1;
-            int column = 1;
-            TableCellRenderer renderer = table.getCellRenderer(row, column);
-            JProgressBar progressBar = (JProgressBar) table.prepareRenderer(renderer, row, column);
+        @Override
+        public int getColumnCount() {
+            return HEADERS.length;
+        }
 
-            if (allPart == 0) {
-                allPart = 1;
+        @Override
+        public String getColumnName(int index) {
+            return HEADERS[index];
+        }
+
+        @Override
+        public Object getValueAt(int row, int column) {
+            FileState fileState = states.get(row);
+            switch (column) {
+                case 0 : return fileState.getID();
+                case 1 : return fileState.getFileEntry().getName();
+                case 2 : return fileState;
+                default: return null;
+           }
+        }
+
+        public void addFileState(FileState state) {
+            states.add(state);
+            fireTableRowsInserted(states.size() - 1, states.size() - 1);
+        }
+
+        public void updateFileProgress(FileState state) {
+            int index = states.indexOf(state);
+            if (index  != -1) {
+                fireTableCellUpdated(index, 2);
             }
-
-            progressBar.setValue(cntPartHave * PROGRESS_BAR_SIZE / allPart);
         }
     }
 }

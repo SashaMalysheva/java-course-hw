@@ -8,15 +8,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public final class Main {
-    private static final Logger LOG = Logger.getLogger(Main.class);
+public final class ClientGUIRunner {
+    private static final Logger LOG = Logger.getLogger(ClientGUIRunner.class);
     private static final Path PATH = Paths.get("");
 
     private static Client client;
     private static JFileChooser fileChooser;
     private static DownloadGUI downloadGUI;
 
-    private Main() {
+    private ClientGUIRunner() {
     }
 
     public static void main(String[] args) throws IOException {
@@ -71,7 +71,6 @@ public final class Main {
                 } catch (IOException er) {
                     er.printStackTrace();
                 }
-                downloadGUI.update();
             }
         });
 

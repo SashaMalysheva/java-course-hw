@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,12 +23,13 @@ public final class Client implements AutoCloseable {
     private static final String STATE_FILE = "client-state.dat";
 
     private final Map<Integer, FileState> files;
-
     private final Path path;
-
     private final String host;
 
     private volatile Downloader downloader;
+
+    private Consumer<FileState> onFileStateAdded;
+    private Consumer<FileState> onFileStateChanged;
 
     public Client(String host, Path path) throws IOException {
         this.path = path;
@@ -81,6 +83,7 @@ public final class Client implements AutoCloseable {
 
     public void get(Socket seed, FileState fileState, int part) throws IOException {
         fetchResponse(seed, new GetRequest(part, fileState));
+        if (onFileStateChanged != null) onFileStateChanged.accept(fileState);
     }
 
     public Seed seed() throws IOException {
@@ -110,6 +113,7 @@ public final class Client implements AutoCloseable {
 
     public void saveFileState(FileState fileState) {
         files.put(fileState.getID(), fileState);
+        if (onFileStateAdded != null) onFileStateAdded.accept(fileState);
     }
 
     public Downloader downloader() {
@@ -121,6 +125,14 @@ public final class Client implements AutoCloseable {
             }
         }
         return downloader;
+    }
+
+    public void setOnFileStateAdded(Consumer<FileState> onFileStateAdded) {
+        this.onFileStateAdded = onFileStateAdded;
+    }
+
+    public void setOnFileStateChanged(Consumer<FileState> onFileStateChanged) {
+        this.onFileStateChanged = onFileStateChanged;
     }
 
     @Override

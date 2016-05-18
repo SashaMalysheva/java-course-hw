@@ -18,8 +18,6 @@ public class ServerFilesGUI extends JPanel implements ActionListener {
     private JList<FileEntry> list;
     private DefaultListModel<FileEntry> listModel;
 
-    private JButton okeyButton;
-
     public ServerFilesGUI(Client client, JFrame frame) throws IOException {
         super(new BorderLayout());
 
@@ -30,7 +28,7 @@ public class ServerFilesGUI extends JPanel implements ActionListener {
         list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         list.setSelectedIndex(0);
 
-        okeyButton = new JButton(DOWNLOAD_FILES_STRING);
+        JButton okeyButton = new JButton(DOWNLOAD_FILES_STRING);
         okeyButton.setActionCommand(DOWNLOAD_FILES_STRING);
         okeyButton.addActionListener(this);
 
@@ -44,7 +42,7 @@ public class ServerFilesGUI extends JPanel implements ActionListener {
     public void update() throws IOException {
         listModel.clear();
 
-        client.list().forEach(fileEntry -> listModel.addElement(fileEntry));
+        client.list().forEach(listModel::addElement);
     }
 
 

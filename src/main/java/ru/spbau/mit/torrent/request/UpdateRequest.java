@@ -29,16 +29,11 @@ public class UpdateRequest implements TrackerRequest {
         this.availableFiles = availableFiles;
         ClientInfo updatedClientInfo = new ClientInfo(seedAddress, seedPort, availableFiles);
         Set<ClientInfo> infoSet = tracker.getClientInfoSet();
-        System.err.println("Tracker: seed info updated");
+
         //updating info
         infoSet.remove(updatedClientInfo);
         infoSet.add(updatedClientInfo);
-
-        //delete after a minute
-        tracker.getScheduler().schedule(() -> {
-            System.err.println("Tracker: seed info removed");
-            infoSet.remove(updatedClientInfo);
-        }, 1, TimeUnit.MINUTES);
+        System.err.println("Tracker: seed info updated for seed " + seedAddress + ":" + seedPort);
     }
 
     @Override

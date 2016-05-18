@@ -29,6 +29,7 @@ public final class FileState {
 
     private final List<PartState> partStateList;
     private final FileEntry fileEntry;
+    private final Path dir;
     private final Path local;
 
     public FileEntry getFileEntry() {
@@ -42,6 +43,7 @@ public final class FileState {
     private FileState(List<PartState> partStateList, FileEntry fileEntry, Path dir) throws IOException {
         this.partStateList = partStateList;
         this.fileEntry = fileEntry;
+        this.dir = dir;
         this.local = dir.resolve(fileEntry.getName());
         if (!Files.exists(local)) {
             Files.createFile(local);
@@ -122,14 +124,14 @@ public final class FileState {
         FileEntry fileEntry = FileEntry.load(dis);
         List<PartState> list = new ArrayList<>();
         Collections.readFrom(dis, list, stream -> stream.readBoolean() ? PartState.LOADED : PartState.MISSED);
-        Path localPath = Paths.get(dis.readUTF());
-        return new FileState(list, fileEntry, localPath);
+        Path dir = Paths.get(dis.readUTF());
+        return new FileState(list, fileEntry, dir);
     }
 
     public void store(DataOutputStream dos) throws IOException {
         fileEntry.store(dos);
         Collections.writeTo(dos, partStateList, (stream, state) -> stream.writeBoolean(state == PartState.LOADED));
-        dos.writeUTF(local.toString());
+        dos.writeUTF(dir.toString());
     }
 
     public boolean hasMissedParts() {
@@ -178,14 +180,10 @@ public final class FileState {
         );
     }
 
-    public int numOfExistingParts() {
-        int res = 0;
-        for (PartState part : partStateList) {
-            if (part.loaded()) {
-                ++res;
-            }
-        }
-        return res;
+    public int loadedPartsCount() {
+        return partStateList.stream()
+                .mapToInt((state) -> state == PartState.LOADED ? 1 : 0)
+                .sum();
     }
 
     public  int getPartsCount() {

@@ -7,6 +7,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Downloader implements AutoCloseable {
+    public static final int PER_SOURCES_REQ_DELAY = 100;
+
     private final Client client;
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
@@ -25,10 +27,15 @@ public class Downloader implements AutoCloseable {
                         for (int part : state.onlyMissed(client.stat(cl.openSocket(), state.getID()))) {
                             System.err.println("Loading " + part + " part for " + state.getFileEntry());
                             client.get(cl.openSocket(), state, part);
+                            //Thread.sleep(100);
                         }
                     }
+                    Thread.sleep(PER_SOURCES_REQ_DELAY);
                 } catch (IOException e) {
                     e.printStackTrace();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
                 }
             }
         });
