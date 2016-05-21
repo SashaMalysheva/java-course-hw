@@ -32,7 +32,7 @@ public final class Client implements AutoCloseable {
     private Consumer<FileState> onFileStateChanged;
 
     public Client(String host, Path path) throws IOException {
-        this.path = path;
+        this.path = path.toAbsolutePath();
         this.host = host;
 
         Path state = path.resolve(STATE_FILE);

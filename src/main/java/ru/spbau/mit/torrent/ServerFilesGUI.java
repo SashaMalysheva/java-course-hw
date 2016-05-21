@@ -1,16 +1,16 @@
 package ru.spbau.mit.torrent;
 
-import org.apache.log4j.Logger;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class ServerFilesGUI extends JPanel implements ActionListener {
-    private static final Logger LOG = Logger.getLogger(ServerFilesGUI.class);
     private static final String DOWNLOAD_FILES_STRING = "Okey";
+    private static final Path RELATIVE_ROOT_PATH = Paths.get("");
 
     private Client client;
     private JFrame frame;
@@ -38,27 +38,22 @@ public class ServerFilesGUI extends JPanel implements ActionListener {
         add(okeyButton, BorderLayout.SOUTH);
     }
 
-
     public void update() throws IOException {
         listModel.clear();
-
         client.list().forEach(listModel::addElement);
     }
-
-
 
     @Override
     public void actionPerformed(ActionEvent event) {
         list.getSelectedValuesList().forEach((chosenFile) -> {
             try {
-                FileState state = FileState.newFile(client.getPath(), chosenFile);
+                FileState state = FileState.newFile(RELATIVE_ROOT_PATH, chosenFile);
                 client.saveFileState(state);
                 client.downloader().submitToDownload(state);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
-
         frame.dispose();
     }
 }

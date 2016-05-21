@@ -20,6 +20,7 @@ public class TestTorrent {
     private static final Path EXAMPLE_PATH = Paths.get("src", "test", "resources", "checkstyle.xml");
     private static final Path CLIENT1_DIR = Paths.get("torrent", "client-01");
     private static final Path CLIENT2_DIR = Paths.get("torrent", "client-02");
+    private static final Path TRACKER_DIR = Paths.get("torrent", "tracker");
 
     private FileEntry upload(Client client) throws IOException {
         return client.upload(
@@ -31,7 +32,7 @@ public class TestTorrent {
     @Test
     public void testListAndUpload() throws IOException {
         try (
-                Tracker tracker = new Tracker();
+                Tracker tracker = new Tracker(TRACKER_DIR);
                 Client client1 = new Client("localhost", CLIENT1_DIR);
                 Client client2 = new Client("localhost", CLIENT2_DIR)
         ) {
@@ -59,7 +60,7 @@ public class TestTorrent {
     public void testDownload() throws IOException {
         FileEntry entry;
         try (
-                Tracker tracker = new Tracker();
+                Tracker tracker = new Tracker(TRACKER_DIR);
                 Client client2 = new Client("localhost", CLIENT2_DIR);
                 Client client1 = new Client("localhost", CLIENT1_DIR)) {
             Thread trackerThread = new Thread(tracker);
@@ -67,7 +68,7 @@ public class TestTorrent {
 
             entry = upload(client1);
 
-            FileState state = FileState.ownFile(EXAMPLE_PATH, entry.getID());
+            FileState state = FileState.ownFile(CLIENT1_DIR.relativize(EXAMPLE_PATH), entry.getID());
             client1.saveFileState(state);
 
             final int id = entry.getID();

@@ -1,6 +1,5 @@
 package ru.spbau.mit.torrent;
 
-import org.apache.log4j.Logger;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public final class ClientGUIRunner {
-    private static final Logger LOG = Logger.getLogger(ClientGUIRunner.class);
     private static final Path PATH = Paths.get("");
 
     private static Client client;
@@ -26,7 +24,7 @@ public final class ClientGUIRunner {
         seedThread.start();
 
         final JFrame frame = new JFrame("Torrent");
-        final JMenuBar menubar = buildMenuBar();
+        final JMenuBar menuBar = buildMenuBar();
 
         fileChooser = new JFileChooser(PATH.toAbsolutePath().toFile());
         downloadGUI = new DownloadGUI(client);
@@ -46,7 +44,7 @@ public final class ClientGUIRunner {
                 System.exit(0);
             }
         });
-        frame.setJMenuBar(menubar);
+        frame.setJMenuBar(menuBar);
         frame.add(downloadGUI);
 
         frame.pack();
@@ -66,7 +64,7 @@ public final class ClientGUIRunner {
                 File file = fileChooser.getSelectedFile();
                 try {
                     FileEntry entry = client.upload(file.getName(), Files.size(file.toPath()));
-                    FileState state = FileState.ownFile(file.toPath(), entry.getID());
+                    FileState state = FileState.ownFile(client.getPath().relativize(file.toPath()), entry.getID());
                     client.saveFileState(state);
                 } catch (IOException er) {
                     er.printStackTrace();

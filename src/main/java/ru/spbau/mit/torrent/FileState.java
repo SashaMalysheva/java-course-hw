@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 public final class FileState {
 
-    private static final int FULL_PART_SIZE = 10 * 1024 * 1024;
+    private static final int FULL_PART_SIZE = 1 * 1024 * 1024;
     private static final int BUFFER_SIZE = 4 * 1024;
 
     enum PartState {
@@ -29,7 +29,6 @@ public final class FileState {
 
     private final List<PartState> partStateList;
     private final FileEntry fileEntry;
-    private final Path dir;
     private final Path local;
 
     public FileEntry getFileEntry() {
@@ -37,14 +36,13 @@ public final class FileState {
     }
 
     private FileState(List<PartState> partStateList, FileEntry fileEntry) throws IOException {
-        this(partStateList, fileEntry, Paths.get(""));
+        this(partStateList, fileEntry, Paths.get(fileEntry.getName()));
     }
 
-    private FileState(List<PartState> partStateList, FileEntry fileEntry, Path dir) throws IOException {
+    private FileState(List<PartState> partStateList, FileEntry fileEntry, Path local) throws IOException {
         this.partStateList = partStateList;
         this.fileEntry = fileEntry;
-        this.dir = dir;
-        this.local = dir.resolve(fileEntry.getName());
+        this.local = local;
         if (!Files.exists(local)) {
             Files.createFile(local);
         }
@@ -131,7 +129,7 @@ public final class FileState {
     public void store(DataOutputStream dos) throws IOException {
         fileEntry.store(dos);
         Collections.writeTo(dos, partStateList, (stream, state) -> stream.writeBoolean(state == PartState.LOADED));
-        dos.writeUTF(dir.toString());
+        dos.writeUTF(local.toString());
     }
 
     public boolean hasMissedParts() {
@@ -163,7 +161,7 @@ public final class FileState {
         for (int i = 0; i < parts; i++) {
             partStateList.add(PartState.MISSED);
         }
-        return new FileState(partStateList, entry, dir);
+        return new FileState(partStateList, entry, dir.resolve(entry.getName()));
     }
 
     public static FileState ownFile(Path path, int id) throws IOException {
@@ -176,7 +174,7 @@ public final class FileState {
         return new FileState(
                 partStateList,
                 new FileEntry(id, path.getFileName().toString(), size),
-                path.getParent()
+                path
         );
     }
 

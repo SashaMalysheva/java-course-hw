@@ -81,7 +81,7 @@ final class ClientRunner {
         String name = path.getFileName().toString();
         long size = Files.size(path);
         FileEntry entry = client.upload(name, size);
-        FileState state = FileState.ownFile(path, entry.getID());
+        FileState state = FileState.ownFile(client.getPath().relativize(path), entry.getID());
         client.saveFileState(state);
         System.out.printf("File uploaded to tracker and assigned by %d ID\n", entry.getID());
     }

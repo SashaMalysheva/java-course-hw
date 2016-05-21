@@ -14,7 +14,6 @@ public class DownloadGUI extends JPanel {
         super(new GridLayout(1, 0));
 
         TableModel model = new DownloadGUITableModel(client);
-
         JTable table = new JTable(model);
 
         table.getColumn("Progress").setCellRenderer((table1, value, isSelected, hasFocus, row, column) -> {
