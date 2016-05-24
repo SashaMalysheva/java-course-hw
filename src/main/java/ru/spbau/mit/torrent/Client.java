@@ -44,10 +44,11 @@ public final class Client implements AutoCloseable {
         try (DataInputStream dis = new DataInputStream(Files.newInputStream(state))) {
             Collections.readFrom(dis, list, FileState::load);
         }
-        this.files = list.stream().collect(Collectors.toConcurrentMap(FileState::getID, Function.<FileState>identity()));
+        this.files = list.stream()
+                .collect(Collectors.toConcurrentMap(FileState::getID, Function.<FileState>identity()));
     }
 
-    public ArrayList<FileState> getArrayOfFiles(){
+    public ArrayList<FileState> getArrayOfFiles() {
         return new ArrayList<>(files.values());
     }
 
@@ -83,7 +84,9 @@ public final class Client implements AutoCloseable {
 
     public void get(Socket seed, FileState fileState, int part) throws IOException {
         fetchResponse(seed, new GetRequest(part, fileState));
-        if (onFileStateChanged != null) onFileStateChanged.accept(fileState);
+        if (onFileStateChanged != null) {
+            onFileStateChanged.accept(fileState);
+        }
     }
 
     public Seed seed() throws IOException {
@@ -113,7 +116,9 @@ public final class Client implements AutoCloseable {
 
     public void saveFileState(FileState fileState) {
         files.put(fileState.getID(), fileState);
-        if (onFileStateAdded != null) onFileStateAdded.accept(fileState);
+        if (onFileStateAdded != null) {
+            onFileStateAdded.accept(fileState);
+        }
     }
 
     public Downloader downloader() {

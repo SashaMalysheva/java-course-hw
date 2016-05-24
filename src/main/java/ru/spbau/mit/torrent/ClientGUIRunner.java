@@ -12,7 +12,6 @@ public final class ClientGUIRunner {
 
     private static Client client;
     private static JFileChooser fileChooser;
-    private static DownloadGUI downloadGUI;
 
     private ClientGUIRunner() {
     }
@@ -27,7 +26,7 @@ public final class ClientGUIRunner {
         final JMenuBar menuBar = buildMenuBar();
 
         fileChooser = new JFileChooser(PATH.toAbsolutePath().toFile());
-        downloadGUI = new DownloadGUI(client);
+        DownloadGUI downloadGUI = new DownloadGUI(client);
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 

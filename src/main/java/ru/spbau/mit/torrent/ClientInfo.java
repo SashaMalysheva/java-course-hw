@@ -3,9 +3,7 @@ package ru.spbau.mit.torrent;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Collections;
 import java.util.Set;
-import java.util.StringJoiner;
 
 public class ClientInfo {
     private final InetAddress seedAddress;

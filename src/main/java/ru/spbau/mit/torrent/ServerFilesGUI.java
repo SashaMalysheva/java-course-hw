@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ServerFilesGUI extends JPanel implements ActionListener {
-    private static final String DOWNLOAD_FILES_STRING = "Okey";
+    private static final String DOWNLOAD_FILES_STRING = "Ok";
     private static final Path RELATIVE_ROOT_PATH = Paths.get("");
 
     private Client client;
@@ -28,14 +28,14 @@ public class ServerFilesGUI extends JPanel implements ActionListener {
         list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         list.setSelectedIndex(0);
 
-        JButton okeyButton = new JButton(DOWNLOAD_FILES_STRING);
-        okeyButton.setActionCommand(DOWNLOAD_FILES_STRING);
-        okeyButton.addActionListener(this);
+        JButton okButton = new JButton(DOWNLOAD_FILES_STRING);
+        okButton.setActionCommand(DOWNLOAD_FILES_STRING);
+        okButton.addActionListener(this);
 
         update();
         JScrollPane scrollPane = new JScrollPane(list);
         add(scrollPane, BorderLayout.CENTER);
-        add(okeyButton, BorderLayout.SOUTH);
+        add(okButton, BorderLayout.SOUTH);
     }
 
     public void update() throws IOException {

@@ -9,7 +9,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 public class UpdateRequest implements TrackerRequest {
 

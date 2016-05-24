@@ -32,7 +32,7 @@ public class DownloadGUI extends JPanel {
 
         private final List<FileState> states;
 
-        public DownloadGUITableModel(Client client) {
+        DownloadGUITableModel(Client client) {
             this.states = client.getArrayOfFiles();
             client.setOnFileStateAdded(this::addFileState);
             client.setOnFileStateChanged(this::updateFileProgress);
